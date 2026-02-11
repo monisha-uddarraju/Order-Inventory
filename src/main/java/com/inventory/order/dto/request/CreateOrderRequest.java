@@ -10,7 +10,3 @@ public record CreateOrderRequest(
         @NotEmpty List<CreateOrderItemRequest> items
 ) {}
 
-public record CreateOrderItemRequest(
-        @NotNull Integer productId,
-        @Min(1) Integer quantity
-) {}
