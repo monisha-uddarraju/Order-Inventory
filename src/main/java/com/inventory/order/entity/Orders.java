@@ -3,10 +3,12 @@ package com.inventory.order.entity;
 
 
 import jakarta.persistence.*;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -31,8 +33,8 @@ public class Orders {
     private Integer id;
 
     @NotNull
-    @Column(name = "order_tms", nullable = false)
-    private OffsetDateTime orderTms;
+    @Column(name = "order_tms", nullable = false, columnDefinition = "TIMESTAMP")
+    private Instant orderTms;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false,
@@ -44,9 +46,9 @@ public class Orders {
                 foreignKey = @ForeignKey(name = "fk_orders_store"))
     private Stores store;
 
-    @Enumerated(EnumType.STRING)
+    
     @Column(name = "order_status", length = 10, nullable = false)
-    private OrderStatus orderStatus;
+    private String orderStatus;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

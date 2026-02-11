@@ -34,16 +34,16 @@ public class Products {
     @Column(name = "unit_price", precision = 10, scale = 2, nullable = false)
     private BigDecimal unitPrice;
 
-    @Column(name = "colour", length = 45)
+    @Column(name = "colour", length = 45, nullable = false)
     private String colour;
 
-    @Column(name = "brand", length = 45)
+    @Column(name = "brand", length = 45, nullable = false)
     private String brand;
 
-    @Column(name = "size", length = 10)
+    @Column(name = "size", length = 10, nullable = false)
     private String size;
 
-    @Column(name = "rating")
+    @Column(name = "rating", nullable = false)
     private Integer rating;
 
     @OneToMany(mappedBy = "product")

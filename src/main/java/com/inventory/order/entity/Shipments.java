@@ -43,9 +43,9 @@ public class Shipments {
     @Column(name = "delivery_address", length = 512, nullable = false)
     private String deliveryAddress;
 
-    @Enumerated(EnumType.STRING)
+    
     @Column(name = "shipment_status", length = 100, nullable = false)
-    private ShipmentStatus shipmentStatus;
+    private String shipmentStatus;
 
     @OneToMany(mappedBy = "shipment")
     @Builder.Default

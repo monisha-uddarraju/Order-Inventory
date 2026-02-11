@@ -31,8 +31,7 @@ public class Order_Items {
     @JoinColumn(name = "order_id", nullable = false,
                 foreignKey = @ForeignKey(name = "fk_order_items_order"))
     private Orders order;
-
-    @Id
+  
     @Column(name = "line_item_id", nullable = false)
     private Integer lineItemId;
 
