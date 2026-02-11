@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
-//import java.io.Serializable;
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Getter 
@@ -23,7 +23,7 @@ import java.math.BigDecimal;
            @Index(name = "idx_order_items_shipment", columnList = "shipment_id")
        })
 @ToString(exclude = {"order", "product", "shipment"})
-//@IdClass(Order_Items.OrderItemId.class)
+@IdClass(Order_Items.OrderItemId.class)
 public class Order_Items {
 
     @Id
@@ -53,21 +53,21 @@ public class Order_Items {
                 foreignKey = @ForeignKey(name = "fk_order_items_shipment"))
     private Shipments shipment;
 
-//    /**
-//     * Composite key class for (order_id, line_item_id).
-//     * Note: for @IdClass, field names must match the entity IDs and
-//     * the type of relationship IDs use the FK's PK type (Order.id → Long).
-//     */
-//    @Getter @Setter
-//    @NoArgsConstructor @AllArgsConstructor
-//    @EqualsAndHashCode
-//    
-//    public static class OrderItemId implements Serializable {
-//        /**
-//		 * 
-//		 */
-//		private static final long serialVersionUID = 1L;
-//		private Long order;       // matches 'order' field's PK type
-//        private Long lineItemId;  // matches 'lineItemId'
-//    }
+    /**
+     * Composite key class for (order_id, line_item_id).
+     * Note: for @IdClass, field names must match the entity IDs and
+     * the type of relationship IDs use the FK's PK type (Order.id → Long).
+     */
+    @Getter @Setter
+    @NoArgsConstructor @AllArgsConstructor
+    @EqualsAndHashCode
+    
+    public static class OrderItemId implements Serializable {
+        /**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private Integer order;       // matches 'order' field's PK type
+        private Integer lineItemId;  // matches 'lineItemId'
+    }
 }

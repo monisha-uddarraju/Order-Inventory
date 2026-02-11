@@ -1,5 +1,8 @@
 package com.inventory.order.repository;
 
-public class StoresRepository {
+import com.inventory.order.entity.Stores;
+import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface StoresRepository extends JpaRepository<Stores, Integer> { 
+	
 }

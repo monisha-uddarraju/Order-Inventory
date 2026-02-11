@@ -1,9 +1,3 @@
-//package com.inventory.order.repository;
-//
-//public class CustomersRepository {
-//
-//}
-
 package com.inventory.order.repository;
  
 import com.inventory.order.entity.Customers;
