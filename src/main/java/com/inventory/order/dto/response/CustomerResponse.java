@@ -1,8 +1,13 @@
-
 package com.inventory.order.dto.response;
 
-public record CustomerResponse(
-        Integer id,
-        String emailAddress,
-        String fullName
-) {}
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CustomerResponse {
+    private Integer id;
+    private String emailAddress;
+    private String fullName;
+}
