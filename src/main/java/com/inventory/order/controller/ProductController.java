@@ -33,11 +33,11 @@ public class ProductController {
         return ResponseEntity.ok(service.update(req));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        service.delete(id);
-        return ResponseEntity.ok("Product deleted");
-    }
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<?> delete(@PathVariable Integer id) {
+//        service.delete(id);
+//        return ResponseEntity.ok("Product deleted");
+//    }
 
     @GetMapping("/name/{name}")
     public List<ProductResponse> search(@PathVariable String name) {

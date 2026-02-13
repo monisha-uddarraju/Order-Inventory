@@ -31,11 +31,11 @@ public class CustomerController {
         return service.update(req);
     }
 
-    @DeleteMapping("/{id}")
-    public String delete(@PathVariable Integer id) {
-        service.delete(id);
-        return "Customer deleted";
-    }
+//    @DeleteMapping("/{id}")
+//    public String delete(@PathVariable Integer id) {
+//        service.delete(id);
+//        return "Customer deleted";
+//    }
 
     @GetMapping("/email/{email}")
     public CustomerResponse byEmail(@PathVariable String email) {
