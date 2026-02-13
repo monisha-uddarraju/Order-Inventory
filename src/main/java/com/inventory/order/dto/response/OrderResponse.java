@@ -1,15 +1,21 @@
-
 package com.inventory.order.dto.response;
 
+import lombok.*;
 import java.time.Instant;
 import java.util.List;
 
-public record OrderResponse(
-        Integer id,
-        Instant orderTms,
-        String orderStatus,
-        Integer customerId,
-        Integer storeId,
-        List<OrderItemResponse> items
-) {}
-//17
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class OrderResponse {
+
+    private Integer id;
+    private Instant orderTms;
+    private String orderStatus;
+
+    private Integer customerId;
+    private Integer storeId;
+
+    private List<OrderItemResponse> items;
+}
