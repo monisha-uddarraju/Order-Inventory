@@ -23,3 +23,4 @@ public interface CustomerMapper {
     @Mapping(target = "shipments", ignore = true)
     Customers fromCreateRequest(CreateCustomerRequest dto);
 }
+//1

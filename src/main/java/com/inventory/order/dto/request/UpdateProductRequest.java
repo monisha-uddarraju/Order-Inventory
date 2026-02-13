@@ -13,3 +13,4 @@ public record UpdateProductRequest(
         @NotBlank String size,
         @Min(0) Integer rating
 ) {}
+//11

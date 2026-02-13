@@ -7,4 +7,4 @@ import java.util.List;
 
 public interface ShipmentsRepository extends JpaRepository<Shipments, Integer> {
     List<Shipments> findByShipmentStatus(String shipmentStatus);
-}
+}//1

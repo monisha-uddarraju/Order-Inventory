@@ -12,3 +12,4 @@ public record CreateProductRequest(
         @NotBlank String size,
         @Min(0) Integer rating
 ) {}
+//9

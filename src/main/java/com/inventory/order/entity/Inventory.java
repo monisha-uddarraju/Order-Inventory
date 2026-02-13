@@ -40,3 +40,4 @@ public class Inventory {
     @Column(name = "product_inventory", nullable = false)
     private Integer productInventory;
 }
+//2

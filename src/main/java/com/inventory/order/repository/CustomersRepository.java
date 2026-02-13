@@ -28,4 +28,4 @@ public interface CustomersRepository extends JpaRepository<Customers, Integer> {
 			""")
 	List<Customers> findCustomersByShipmentStatus(String status);
 
-}
+}//1

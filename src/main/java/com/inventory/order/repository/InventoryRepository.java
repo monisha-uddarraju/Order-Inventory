@@ -12,4 +12,4 @@ import java.util.Optional;
 public interface InventoryRepository extends JpaRepository<Inventory, Integer> {
     Optional<Inventory> findByStoreAndProduct(Stores store, Products product);
     List<Inventory> findByStore_Id(Integer storeId);
-}
+}//1

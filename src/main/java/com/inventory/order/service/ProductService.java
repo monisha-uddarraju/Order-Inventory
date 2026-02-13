@@ -71,4 +71,4 @@ public class ProductService {
     public List<ProductResponse> filterByUnitPrice(BigDecimal min, BigDecimal max) {
         return repo.findByUnitPriceBetween(min, max).stream().map(mapper::toResponse).toList();
     }
-}
+}//1

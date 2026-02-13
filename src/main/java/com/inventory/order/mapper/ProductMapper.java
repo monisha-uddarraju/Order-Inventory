@@ -1,6 +1,7 @@
 package com.inventory.order.mapper;
 
-import org.mapstruct.BeanMapping;
+
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -27,4 +28,4 @@ public interface ProductMapper {
     @Mapping(target = "inventories", ignore = true)
     @Mapping(target = "orderItems", ignore = true)
     Products fromCreateRequest(CreateProductRequest dto);
-}
+}//1

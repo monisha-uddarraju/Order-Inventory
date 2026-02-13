@@ -7,3 +7,4 @@ public record CreateCustomerRequest(
         @Email @NotBlank String emailAddress,
         @NotBlank String fullName
 ) {}
+//6

@@ -40,3 +40,4 @@ public class Customers {
     @Builder.Default
     private Set<Shipments> shipments = new LinkedHashSet<>();
 }
+//1

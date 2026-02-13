@@ -26,3 +26,4 @@ public class InventoryController {
         return service.getByStoreAndProduct(storeId, productId);
     }
 }
+//3

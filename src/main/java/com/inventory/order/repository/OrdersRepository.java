@@ -12,4 +12,4 @@ public interface OrdersRepository extends JpaRepository<Orders, Integer> {
     List<Orders> findByCustomer_Id(Integer customerId);
     List<Orders> findByOrderTmsBetween(Instant start, Instant end);
     List<Orders> findByStore_StoreNameIgnoreCase(String storeName);
-}
+}//1

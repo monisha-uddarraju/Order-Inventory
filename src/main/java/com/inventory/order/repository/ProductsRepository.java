@@ -13,4 +13,4 @@ public interface ProductsRepository extends JpaRepository<Products, Integer> {
     List<Products> findByBrandIgnoreCase(String brand);
     List<Products> findByColourIgnoreCase(String colour);
     List<Products> findByUnitPriceBetween(BigDecimal min, BigDecimal max);
-}
+}//1

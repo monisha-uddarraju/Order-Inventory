@@ -21,4 +21,4 @@ public interface Order_ItemsRepository extends JpaRepository<Order_Items, OrderI
            group by oi.shipment.shipmentStatus
            """)
     List<Object[]> sumSoldQuantityByShipmentStatus();
-}
+}//1
