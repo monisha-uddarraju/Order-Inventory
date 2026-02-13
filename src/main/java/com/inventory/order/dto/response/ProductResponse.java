@@ -1,4 +1,4 @@
-// com/inventory/order/dto/response/ProductResponse.java
+
 package com.inventory.order.dto.response;
 
 import java.math.BigDecimal;

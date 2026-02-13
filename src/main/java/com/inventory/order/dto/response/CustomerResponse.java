@@ -1,4 +1,4 @@
-// com/inventory/order/dto/response/CustomerResponse.java
+
 package com.inventory.order.dto.response;
 
 public record CustomerResponse(

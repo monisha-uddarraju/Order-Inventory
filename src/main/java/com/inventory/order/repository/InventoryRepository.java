@@ -1,4 +1,4 @@
-// com/inventory/order/repository/InventoryRepository.java
+
 package com.inventory.order.repository;
 
 import com.inventory.order.entity.Inventory;

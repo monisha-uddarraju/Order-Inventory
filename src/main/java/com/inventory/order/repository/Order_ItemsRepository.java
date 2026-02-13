@@ -1,4 +1,4 @@
-// com/inventory/order/repository/OrderItemsRepository.java
+
 package com.inventory.order.repository;
 
 import com.inventory.order.entity.Order_Items;
@@ -12,7 +12,7 @@ import java.util.*;
 public interface Order_ItemsRepository extends JpaRepository<Order_Items, OrderItemId> {
     List<Order_Items> findByOrder(Orders order);
 
-    // Shipment status -> sum(quantity) of sold products
+    
     @Query("""
            select coalesce(oi.shipment.shipmentStatus,'UNASSIGNED') as status,
                   sum(oi.quantity) as totalQty

@@ -12,7 +12,7 @@ public interface CustomersRepository extends JpaRepository<Customers, Integer> {
 
 	List<Customers> findByFullNameContainingIgnoreCase(String name);
 
-	// Count distinct customers grouped by shipment status
+	
 	@Query("""
 			select s.shipmentStatus as status, count(distinct s.customer.id) as cnt
 			from Shipments s
@@ -20,7 +20,7 @@ public interface CustomersRepository extends JpaRepository<Customers, Integer> {
 			""")
 	List<Object[]> countCustomersByShipmentStatus();
 
-	// Customers with at least one pending shipment
+	
 	@Query("""
 			select distinct s.customer
 			from Shipments s

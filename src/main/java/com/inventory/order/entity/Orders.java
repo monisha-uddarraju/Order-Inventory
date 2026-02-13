@@ -54,9 +54,5 @@ public class Orders {
     @Builder.Default
     private Set<Order_Items> items = new LinkedHashSet<>();
 
-    // convenience
-//    public void addItem(Order_Items item) {
-//        this.items.add(item);
-//        item.setOrder(this);
-//    }
+
 }

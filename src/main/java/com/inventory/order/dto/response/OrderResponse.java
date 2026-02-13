@@ -1,4 +1,4 @@
-// com/inventory/order/dto/response/OrderResponse.java
+
 package com.inventory.order.dto.response;
 
 import java.time.Instant;

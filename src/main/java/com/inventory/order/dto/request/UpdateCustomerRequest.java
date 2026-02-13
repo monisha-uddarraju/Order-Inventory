@@ -1,4 +1,4 @@
-// com/inventory/order/dto/request/UpdateCustomerRequest.java
+
 package com.inventory.order.dto.request;
 
 import jakarta.validation.constraints.*;
