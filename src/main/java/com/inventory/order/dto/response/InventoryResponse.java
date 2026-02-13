@@ -13,4 +13,3 @@ public class InventoryResponse {
     private Integer productId;
     private Integer productInventory;
 }
-//13
