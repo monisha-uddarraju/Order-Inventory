@@ -71,4 +71,20 @@ public class ProductService {
     public List<ProductResponse> filterByUnitPrice(BigDecimal min, BigDecimal max) {
         return repo.findByUnitPriceBetween(min, max).stream().map(mapper::toResponse).toList();
     }
+    
+
+public List<ProductResponse> findByBrand(String brand) {
+    return repo.findByBrandIgnoreCase(brand)
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
+}
+
+public List<ProductResponse> findByColour(String colour) {
+    return repo.findByColourIgnoreCase(colour)
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
+}
+
 }//1

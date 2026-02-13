@@ -53,5 +53,23 @@ public class ProductController {
     public List<ProductResponse> sort(@RequestParam String field) {
         return service.sort(field);
     }
+    
+    @GetMapping("/brand/{brand}")
+    public ResponseEntity<List<ProductResponse>> getByBrand(@PathVariable String brand) {
+        List<ProductResponse> products = service.findByBrand(brand);
+        if (products.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/colour/{colour}")
+    public ResponseEntity<List<ProductResponse>> getByColour(@PathVariable String colour) {
+        List<ProductResponse> products = service.findByColour(colour);
+        if (products.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(products);
+    }
 }
 //5
