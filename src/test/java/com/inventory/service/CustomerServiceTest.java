@@ -12,6 +12,8 @@ import com.order.inventory.exception.NotFoundException;
 import com.order.inventory.mapper.CustomerMapper;
 import com.order.inventory.repository.CustomerRepository;
 import com.order.inventory.repository.ShipmentRepository;
+import com.order.inventory.service.CustomerService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

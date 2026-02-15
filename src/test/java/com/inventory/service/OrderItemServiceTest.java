@@ -8,6 +8,8 @@ import com.order.inventory.entity.Shipment;
 import com.order.inventory.entity.ShipmentStatus;
 import com.order.inventory.mapper.OrderItemMapper;
 import com.order.inventory.repository.OrderItemRepository;
+import com.order.inventory.service.OrderItemService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

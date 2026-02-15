@@ -15,6 +15,8 @@ import com.order.inventory.mapper.InventoryMapper;
 import com.order.inventory.repository.InventoryRepository;
 import com.order.inventory.repository.OrderItemRepository;
 import com.order.inventory.repository.OrderRepository;
+import com.order.inventory.service.InventoryService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
