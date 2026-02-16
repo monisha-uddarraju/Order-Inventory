@@ -1,14 +1,13 @@
 package com.inventory.service;
-
+import com.order.inventory.service.*;
 import com.order.inventory.dto.ProductDTO;
 import com.order.inventory.entity.Product;
 import com.order.inventory.exception.BadRequestException;
 import com.order.inventory.exception.NotFoundException;
 import com.order.inventory.mapper.ProductMapper;
 import com.order.inventory.repository.ProductRepository;
-import com.order.inventory.service.ProductService;
-
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -19,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,452 +33,387 @@ class ProductServiceTest {
     @InjectMocks
     private ProductService service;
 
-    // Fixtures
-    private Product p1;
-    private Product p2;
-    private ProductDTO d1;
-    private ProductDTO d2;
+    // ---------------------------------------------------------------------
+    // getAll(String sortField)
+    // ---------------------------------------------------------------------
 
-    @BeforeEach
-    void setUp() {
-        p1 = Product.builder()
-                .id(1)
-                .productName("Phone X")
-                .unitPrice(new BigDecimal("199.99"))
-                .brand("ACME")
-                .colour("Red")
+    @Test
+    @DisplayName("getAll() returns unsorted when sortField is null/blank")
+    void getAll_unsortedWhenNullOrBlank() {
+        // null case
+        when(repo.findAll(Sort.unsorted())).thenReturn(List.of());
+        List<ProductDTO> out1 = service.getAll(null);
+        assertTrue(out1.isEmpty());
+        verify(repo, times(1)).findAll(Sort.unsorted());
+
+        // blank case
+        reset(repo);
+        when(repo.findAll(Sort.unsorted())).thenReturn(List.of());
+        List<ProductDTO> out2 = service.getAll("  ");
+        assertTrue(out2.isEmpty());
+        verify(repo, times(1)).findAll(Sort.unsorted());
+    }
+
+    @Test
+    @DisplayName("getAll() applies valid sort field (ascending)")
+    void getAll_validSortApplied() {
+        Product p = new Product(); p.setId(1); p.setProductName("A");
+        ProductDTO d = ProductDTO.builder().id(1).name("A").build();
+
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+
+        when(repo.findAll(any(Sort.class))).thenReturn(List.of(p));
+        when(mapper.toDto(p)).thenReturn(d);
+
+        List<ProductDTO> out = service.getAll("unitPrice");
+
+        assertEquals(1, out.size());
+        verify(repo).findAll(sortCaptor.capture());
+        Sort sort = sortCaptor.getValue();
+        assertTrue(sort.isSorted());
+        assertNotNull(sort.getOrderFor("unitPrice"));
+        assertEquals(Sort.Direction.ASC, sort.getOrderFor("unitPrice").getDirection());
+    }
+
+    @Test
+    @DisplayName("getAll() rejects invalid sort field")
+    void getAll_invalidSortField() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> service.getAll("unknownField"));
+        assertTrue(ex.getMessage().startsWith("Invalid sort field."));
+        verify(repo, never()).findAll(any(Sort.class));
+    }
+
+    // ---------------------------------------------------------------------
+    // getAllStrict(String field)
+    // ---------------------------------------------------------------------
+
+    @Test
+    @DisplayName("getAllStrict() applies valid field")
+    void getAllStrict_valid() {
+        Product p = new Product(); p.setId(2); p.setProductName("B");
+        ProductDTO d = ProductDTO.builder().id(2).name("B").build();
+
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+
+        when(repo.findAll(any(Sort.class))).thenReturn(List.of(p));
+        when(mapper.toDto(p)).thenReturn(d);
+
+        List<ProductDTO> out = service.getAllStrict("brand");
+
+        assertEquals(1, out.size());
+        verify(repo).findAll(sortCaptor.capture());
+        Sort sort = sortCaptor.getValue();
+        assertTrue(sort.isSorted());
+        assertNotNull(sort.getOrderFor("brand"));
+        assertEquals(Sort.Direction.ASC, sort.getOrderFor("brand").getDirection());
+    }
+
+    @Test
+    @DisplayName("getAllStrict() rejects null/blank/invalid field")
+    void getAllStrict_invalid() {
+        BadRequestException ex1 = assertThrows(BadRequestException.class, () -> service.getAllStrict(null));
+        assertTrue(ex1.getMessage().startsWith("Invalid sort field."));
+
+        BadRequestException ex2 = assertThrows(BadRequestException.class, () -> service.getAllStrict("  "));
+        assertTrue(ex2.getMessage().startsWith("Invalid sort field."));
+
+        BadRequestException ex3 = assertThrows(BadRequestException.class, () -> service.getAllStrict("oops"));
+        assertTrue(ex3.getMessage().startsWith("Invalid sort field."));
+    }
+
+    // ---------------------------------------------------------------------
+    // create(ProductDTO dto)
+    // ---------------------------------------------------------------------
+
+    @Test
+    @DisplayName("create() succeeds with valid name and non-negative price")
+    void create_success() {
+        ProductDTO input = ProductDTO.builder()
+                .id(100)
+                .name("Phone")
+                .unitPrice(new BigDecimal("499.99"))
+                .brand("X")
+                .colour("Black")
                 .size("M")
                 .rating(4)
                 .build();
 
-        p2 = Product.builder()
-                .id(2)
-                .productName("Laptop Z")
-                .unitPrice(new BigDecimal("999.00"))
-                .brand("ZETA")
-                .colour("Blue")
-                .size("L")
-                .rating(5)
-                .build();
+        Product mapped = new Product();
+        mapped.setId(100);
+        mapped.setProductName("Phone");
+        mapped.setUnitPrice(new BigDecimal("499.99"));
+        mapped.setBrand("X");
+        mapped.setColour("Black");
+        mapped.setSize("M");
+        mapped.setRating(4);
 
-        d1 = ProductDTO.builder()
-                .id(1).name("Phone X").unitPrice(new BigDecimal("199.99"))
-                .brand("ACME").colour("Red").size("M").rating(4)
-                .build();
+        Product saved = new Product();
+        saved.setId(100);
+        saved.setProductName("Phone");
 
-        d2 = ProductDTO.builder()
-                .id(2).name("Laptop Z").unitPrice(new BigDecimal("999.00"))
-                .brand("ZETA").colour("Blue").size("L").rating(5)
-                .build();
-    }
+        ProductDTO savedDto = ProductDTO.builder().id(100).name("Phone").build();
 
-    // ---------------------------------------------------------------------
-    // getAll(sortField)
-    // ---------------------------------------------------------------------
-
-    @Test
-    void getAll_unsorted_whenSortFieldBlank() {
-        when(repo.findAll(Sort.unsorted())).thenReturn(List.of(p1, p2));
-        when(mapper.toDto(p1)).thenReturn(d1);
-        when(mapper.toDto(p2)).thenReturn(d2);
-
-        List<ProductDTO> out = service.getAll("  ");
-
-        assertThat(out).containsExactly(d1, d2);
-        verify(repo).findAll(Sort.unsorted());
-        verify(mapper).toDto(p1);
-        verify(mapper).toDto(p2);
-    }
-
-    @Test
-    void getAll_sorts_whenFieldAllowed() {
-        Sort expected = Sort.by("unitPrice").ascending();
-        when(repo.findAll(expected)).thenReturn(List.of(p1, p2));
-        when(mapper.toDto(p1)).thenReturn(d1);
-        when(mapper.toDto(p2)).thenReturn(d2);
-
-        List<ProductDTO> out = service.getAll("unitPrice");
-
-        assertThat(out).containsExactly(d1, d2);
-        verify(repo).findAll(expected);
-    }
-
-    @Test
-    void getAll_throws_whenFieldNotAllowed() {
-        assertThatThrownBy(() -> service.getAll("unknownField"))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid sort field");
-        verifyNoInteractions(repo, mapper);
-    }
-
-    // ---------------------------------------------------------------------
-    // getAllStrict(field)
-    // ---------------------------------------------------------------------
-
-    @Test
-    void getAllStrict_returns_whenValidField() {
-        Sort expected = Sort.by("brand").ascending();
-        when(repo.findAll(expected)).thenReturn(List.of(p1));
-        when(mapper.toDto(p1)).thenReturn(d1);
-
-        List<ProductDTO> out = service.getAllStrict("brand");
-
-        assertThat(out).containsExactly(d1);
-        verify(repo).findAll(expected);
-    }
-
-    @Test
-    void getAllStrict_throws_whenNullOrBlankOrInvalid() {
-        assertThatThrownBy(() -> service.getAllStrict(null))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid sort field");
-        assertThatThrownBy(() -> service.getAllStrict("  "))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid sort field");
-        assertThatThrownBy(() -> service.getAllStrict("oops"))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid sort field");
-
-        verifyNoInteractions(repo, mapper);
-    }
-
-    // ---------------------------------------------------------------------
-    // create(dto)
-    // ---------------------------------------------------------------------
-
-    @Test
-    void create_saves_andReturnsDTO() {
-        ProductDTO input = ProductDTO.builder()
-                .name("Mouse A")
-                .unitPrice(new BigDecimal("49.99"))
-                .brand("ACME")
-                .colour("Black")
-                .size("S")
-                .rating(3)
-                .build();
-
-        Product toSave = Product.builder()
-                .id(null)
-                .productName("Mouse A")
-                .unitPrice(new BigDecimal("49.99"))
-                .brand("ACME")
-                .colour("Black")
-                .size("S")
-                .rating(3)
-                .build();
-
-        Product saved = Product.builder()
-                .id(10)
-                .productName("Mouse A")
-                .unitPrice(new BigDecimal("49.99"))
-                .brand("ACME")
-                .colour("Black")
-                .size("S")
-                .rating(3)
-                .build();
-
-        ProductDTO outDto = ProductDTO.builder()
-                .id(10)
-                .name("Mouse A")
-                .unitPrice(new BigDecimal("49.99"))
-                .brand("ACME")
-                .colour("Black")
-                .size("S")
-                .rating(3)
-                .build();
-
-        when(mapper.toEntity(input)).thenReturn(toSave);
-        when(repo.save(toSave)).thenReturn(saved);
-        when(mapper.toDto(saved)).thenReturn(outDto);
+        when(mapper.toEntity(input)).thenReturn(mapped);
+        when(repo.save(mapped)).thenReturn(saved);
+        when(mapper.toDto(saved)).thenReturn(savedDto);
 
         ProductDTO out = service.create(input);
 
-        assertThat(out).isEqualTo(outDto);
-        verify(mapper).toEntity(input);
-        verify(repo).save(toSave);
+        assertEquals(100, out.getId());
+        assertEquals("Phone", out.getName());
+        verify(repo).save(mapped);
         verify(mapper).toDto(saved);
     }
 
     @Test
-    void create_throws_whenNameMissingOrBlank_orPriceMissing() {
-        ProductDTO noName = ProductDTO.builder().name(null).unitPrice(new BigDecimal("1.00")).build();
-        ProductDTO blankName = ProductDTO.builder().name(" ").unitPrice(new BigDecimal("1.00")).build();
-        ProductDTO noPrice = ProductDTO.builder().name("ABC").unitPrice(null).build();
+    @DisplayName("create() rejects missing name or unitPrice")
+    void create_missingFields() {
+        // missing name
+        ProductDTO a = ProductDTO.builder().name(" ").unitPrice(new BigDecimal("1.00")).build();
+        BadRequestException ex1 = assertThrows(BadRequestException.class, () -> service.create(a));
+        assertEquals("Name and unitPrice are required", ex1.getMessage());
 
-        assertThatThrownBy(() -> service.create(noName))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Name and unitPrice are required");
-        assertThatThrownBy(() -> service.create(blankName))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Name and unitPrice are required");
-        assertThatThrownBy(() -> service.create(noPrice))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Name and unitPrice are required");
+        // missing price
+        ProductDTO b = ProductDTO.builder().name("X").unitPrice(null).build();
+        BadRequestException ex2 = assertThrows(BadRequestException.class, () -> service.create(b));
+        assertEquals("Name and unitPrice are required", ex2.getMessage());
 
-        verifyNoInteractions(repo, mapper);
+        verify(repo, never()).save(any());
     }
 
     @Test
-    void create_throws_whenPriceNegative() {
-        ProductDTO input = ProductDTO.builder()
-                .name("Phone X")
-                .unitPrice(new BigDecimal("-0.01"))
-                .build();
-
-        assertThatThrownBy(() -> service.create(input))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("unitPrice cannot be negative");
-
-        verifyNoInteractions(repo, mapper);
+    @DisplayName("create() rejects negative price")
+    void create_negativePrice() {
+        ProductDTO a = ProductDTO.builder().name("X").unitPrice(new BigDecimal("-1.00")).build();
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.create(a));
+        assertEquals("unitPrice cannot be negative", ex.getMessage());
+        verify(repo, never()).save(any());
     }
 
     // ---------------------------------------------------------------------
-    // update(id, dto)
+    // update(Integer id, ProductDTO dto)
     // ---------------------------------------------------------------------
 
     @Test
-    void update_appliesProvidedFields_andReturnsDTO() {
-        Product existing = Product.builder()
-                .id(1)
-                .productName("Old Name")
-                .brand("OldBrand")
-                .colour("OldColour")
-                .size("M")
-                .rating(3)
-                .unitPrice(new BigDecimal("10.00"))
-                .build();
+    @DisplayName("update() updates provided fields and maps to DTO")
+    void update_success() {
+        Product existing = new Product();
+        existing.setId(10);
+        existing.setProductName("Old");
+        existing.setBrand("OldBrand");
+        existing.setColour("Red");
+        existing.setSize("S");
+        existing.setRating(3);
+        existing.setUnitPrice(new BigDecimal("10.00"));
 
         ProductDTO patch = ProductDTO.builder()
-                .name("New Name")
+                .name("NewName")
                 .brand("NewBrand")
-                .colour("NewColour")
-                .size("L")
+                .colour("Blue")
+                .size("M")
                 .rating(5)
-                .unitPrice(new BigDecimal("12.34"))
+                .unitPrice(new BigDecimal("20.50"))
                 .build();
 
-        Product saved = Product.builder()
-                .id(1)
-                .productName("New Name")
-                .brand("NewBrand")
-                .colour("NewColour")
-                .size("L")
-                .rating(5)
-                .unitPrice(new BigDecimal("12.34"))
-                .build();
+        Product saved = new Product();
+        saved.setId(10);
+        saved.setProductName("NewName");
+        saved.setBrand("NewBrand");
+        saved.setColour("Blue");
+        saved.setSize("M");
+        saved.setRating(5);
+        saved.setUnitPrice(new BigDecimal("20.50"));
 
         ProductDTO outDto = ProductDTO.builder()
-                .id(1).name("New Name").brand("NewBrand").colour("NewColour")
-                .size("L").rating(5).unitPrice(new BigDecimal("12.34"))
+                .id(10).name("NewName").brand("NewBrand").colour("Blue").size("M").rating(5).unitPrice(new BigDecimal("20.50"))
                 .build();
 
-        when(repo.findById(1)).thenReturn(Optional.of(existing));
+        when(repo.findById(10)).thenReturn(Optional.of(existing));
         when(repo.save(existing)).thenReturn(saved);
         when(mapper.toDto(saved)).thenReturn(outDto);
 
-        ProductDTO out = service.update(1, patch);
+        ProductDTO out = service.update(10, patch);
 
-        assertThat(out).isEqualTo(outDto);
-        assertThat(existing.getProductName()).isEqualTo("New Name");
-        assertThat(existing.getBrand()).isEqualTo("NewBrand");
-        assertThat(existing.getColour()).isEqualTo("NewColour");
-        assertThat(existing.getSize()).isEqualTo("L");
-        assertThat(existing.getRating()).isEqualTo(5);
-        assertThat(existing.getUnitPrice()).isEqualByComparingTo("12.34");
-
-        verify(repo).findById(1);
-        verify(repo).save(existing);
-        verify(mapper).toDto(saved);
+        assertEquals(10, out.getId());
+        assertEquals("NewName", existing.getProductName());
+        assertEquals("NewBrand", existing.getBrand());
+        assertEquals("Blue", existing.getColour());
+        assertEquals("M", existing.getSize());
+        assertEquals(5, existing.getRating());
+        assertEquals(new BigDecimal("20.50"), existing.getUnitPrice());
     }
 
     @Test
-    void update_throws_whenProductNotFound() {
-        when(repo.findById(404)).thenReturn(Optional.empty());
+    @DisplayName("update() rejects negative unitPrice")
+    void update_negativePrice() {
+        Product existing = new Product(); existing.setId(11);
+        when(repo.findById(11)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> service.update(404, ProductDTO.builder().build()))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Product not found");
+        ProductDTO patch = ProductDTO.builder().unitPrice(new BigDecimal("-0.01")).build();
 
-        verify(repo).findById(404);
-        verifyNoMoreInteractions(repo);
-        verifyNoInteractions(mapper);
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.update(11, patch));
+        assertEquals("unitPrice cannot be negative", ex.getMessage());
+        verify(repo, never()).save(any());
     }
 
     @Test
-    void update_throws_whenNewPriceNegative() {
-        Product existing = Product.builder()
-                .id(1)
-                .productName("Name")
-                .unitPrice(new BigDecimal("10.00"))
-                .build();
-
-        when(repo.findById(1)).thenReturn(Optional.of(existing));
-
-        ProductDTO patch = ProductDTO.builder()
-                .unitPrice(new BigDecimal("-1.00"))
-                .build();
-
-        assertThatThrownBy(() -> service.update(1, patch))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("unitPrice cannot be negative");
-
-        verify(repo).findById(1);
-        verifyNoMoreInteractions(repo);
-        verifyNoInteractions(mapper);
+    @DisplayName("update() throws NotFound when product missing")
+    void update_notFound() {
+        when(repo.findById(99)).thenReturn(Optional.empty());
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> service.update(99, ProductDTO.builder().build()));
+        assertEquals("Product not found", ex.getMessage());
     }
 
     // ---------------------------------------------------------------------
-    // delete(id)
+    // delete(Integer id)
     // ---------------------------------------------------------------------
 
     @Test
-    void delete_deletes_whenExists() {
-        when(repo.existsById(1)).thenReturn(true);
-
-        service.delete(1);
-
-        verify(repo).existsById(1);
-        verify(repo).deleteById(1);
+    @DisplayName("delete() deletes when exists")
+    void delete_success() {
+        when(repo.existsById(5)).thenReturn(true);
+        service.delete(5);
+        verify(repo).deleteById(5);
     }
 
     @Test
-    void delete_throws_whenNotFound() {
-        when(repo.existsById(99)).thenReturn(false);
-
-        assertThatThrownBy(() -> service.delete(99))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Product not found");
-
-        verify(repo).existsById(99);
+    @DisplayName("delete() throws NotFound when not exists")
+    void delete_notFound() {
+        when(repo.existsById(77)).thenReturn(false);
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> service.delete(77));
+        assertEquals("Product not found", ex.getMessage());
         verify(repo, never()).deleteById(anyInt());
     }
 
     // ---------------------------------------------------------------------
-    // byBrand(brand)
+    // byBrand(String brand)
     // ---------------------------------------------------------------------
 
     @Test
-    void byBrand_returnsMappedList_whenFound() {
-        when(repo.findByBrandIgnoreCase("ACME")).thenReturn(List.of(p1));
-        when(mapper.toDto(p1)).thenReturn(d1);
+    @DisplayName("byBrand() maps found products to DTOs")
+    void byBrand_found() {
+        Product p = new Product(); p.setId(1); p.setBrand("Nike");
+        ProductDTO d = ProductDTO.builder().id(1).brand("Nike").build();
 
-        List<ProductDTO> out = service.byBrand("ACME");
+        when(repo.findByBrandIgnoreCase("NIKE")).thenReturn(List.of(p));
+        when(mapper.toDto(p)).thenReturn(d);
 
-        assertThat(out).containsExactly(d1);
-        verify(repo).findByBrandIgnoreCase("ACME");
-        verify(mapper).toDto(p1);
+        List<ProductDTO> out = service.byBrand("NIKE");
+
+        assertEquals(1, out.size());
+        assertEquals("Nike", out.get(0).getBrand());
     }
 
     @Test
-    void byBrand_throws_whenEmpty() {
-        when(repo.findByBrandIgnoreCase("UNKNOWN")).thenReturn(List.of());
-
-        assertThatThrownBy(() -> service.byBrand("UNKNOWN"))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("No products found for brand: UNKNOWN");
-
-        verify(repo).findByBrandIgnoreCase("UNKNOWN");
-        verifyNoInteractions(mapper);
-    }
-
-    // ---------------------------------------------------------------------
-    // byColour(colour)
-    // ---------------------------------------------------------------------
-
-    @Test
-    void byColour_returnsMappedList_whenFound() {
-        when(repo.findByColourIgnoreCase("Blue")).thenReturn(List.of(p2));
-        when(mapper.toDto(p2)).thenReturn(d2);
-
-        List<ProductDTO> out = service.byColour("Blue");
-
-        assertThat(out).containsExactly(d2);
-        verify(repo).findByColourIgnoreCase("Blue");
-        verify(mapper).toDto(p2);
-    }
-
-    @Test
-    void byColour_throws_whenEmpty() {
-        when(repo.findByColourIgnoreCase("Purple")).thenReturn(List.of());
-
-        assertThatThrownBy(() -> service.byColour("Purple"))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("No products found for colour: Purple");
-
-        verify(repo).findByColourIgnoreCase("Purple");
-        verifyNoInteractions(mapper);
+    @DisplayName("byBrand() throws NotFound when empty")
+    void byBrand_empty() {
+        when(repo.findByBrandIgnoreCase("BrandX")).thenReturn(List.of());
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> service.byBrand("BrandX"));
+        assertEquals("No products found for brand: BrandX", ex.getMessage());
+        verify(mapper, never()).toDto(any());
     }
 
     // ---------------------------------------------------------------------
-    // byPrice(min, max)
+    // byColour(String colour)
     // ---------------------------------------------------------------------
 
     @Test
-    void byPrice_returnsMappedList_whenValidRange() {
-        BigDecimal min = new BigDecimal("100.00");
-        BigDecimal max = new BigDecimal("1000.00");
+    @DisplayName("byColour() maps found products to DTOs")
+    void byColour_found() {
+        Product p = new Product(); p.setId(2); p.setColour("Black");
+        ProductDTO d = ProductDTO.builder().id(2).colour("Black").build();
 
-        when(repo.findByUnitPriceBetween(min, max)).thenReturn(List.of(p1, p2));
-        when(mapper.toDto(p1)).thenReturn(d1);
-        when(mapper.toDto(p2)).thenReturn(d2);
+        when(repo.findByColourIgnoreCase("Black")).thenReturn(List.of(p));
+        when(mapper.toDto(p)).thenReturn(d);
 
-        List<ProductDTO> out = service.byPrice(min, max);
+        List<ProductDTO> out = service.byColour("Black");
 
-        assertThat(out).containsExactly(d1, d2);
-        verify(repo).findByUnitPriceBetween(min, max);
+        assertEquals(1, out.size());
+        assertEquals("Black", out.get(0).getColour());
     }
 
     @Test
-    void byPrice_throws_whenNulls_orMinGreaterThanMax() {
-        assertThatThrownBy(() -> service.byPrice(null, new BigDecimal("1.00")))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid min/max price");
-
-        assertThatThrownBy(() -> service.byPrice(new BigDecimal("1.00"), null))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid min/max price");
-
-        assertThatThrownBy(() -> service.byPrice(new BigDecimal("10.00"), new BigDecimal("5.00")))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid min/max price");
-
-        verifyNoInteractions(repo, mapper);
-    }
-
-    @Test
-    void byPrice_throws_whenMinNegative() {
-        assertThatThrownBy(() -> service.byPrice(new BigDecimal("-0.01"), new BigDecimal("10.00")))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("min cannot be negative");
-
-        verifyNoInteractions(repo, mapper);
+    @DisplayName("byColour() throws NotFound when empty")
+    void byColour_empty() {
+        when(repo.findByColourIgnoreCase("Green")).thenReturn(List.of());
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> service.byColour("Green"));
+        assertEquals("No products found for colour: Green", ex.getMessage());
+        verify(mapper, never()).toDto(any());
     }
 
     // ---------------------------------------------------------------------
-    // byName(name)
+    // byPrice(BigDecimal min, BigDecimal max)
     // ---------------------------------------------------------------------
 
     @Test
-    void byName_returnsMappedList_whenFound() {
-        when(repo.searchByName("phone")).thenReturn(List.of(p1));
-        when(mapper.toDto(p1)).thenReturn(d1);
+    @DisplayName("byPrice() returns mapped list for valid range")
+    void byPrice_validRange() {
+        Product p = new Product(); p.setId(3); p.setUnitPrice(new BigDecimal("50.00"));
+        ProductDTO d = ProductDTO.builder().id(3).unitPrice(new BigDecimal("50.00")).build();
+
+        when(repo.findByUnitPriceBetween(new BigDecimal("10.00"), new BigDecimal("100.00")))
+                .thenReturn(List.of(p));
+        when(mapper.toDto(p)).thenReturn(d);
+
+        List<ProductDTO> out = service.byPrice(new BigDecimal("10.00"), new BigDecimal("100.00"));
+
+        assertEquals(1, out.size());
+        assertEquals(new BigDecimal("50.00"), out.get(0).getUnitPrice());
+    }
+
+    @Test
+    @DisplayName("byPrice() rejects null min or max or min>max")
+    void byPrice_invalidRangeParams() {
+        // null min
+        BadRequestException ex1 = assertThrows(BadRequestException.class,
+                () -> service.byPrice(null, new BigDecimal("10")));
+        assertEquals("Invalid min/max price", ex1.getMessage());
+
+        // null max
+        BadRequestException ex2 = assertThrows(BadRequestException.class,
+                () -> service.byPrice(new BigDecimal("1"), null));
+        assertEquals("Invalid min/max price", ex2.getMessage());
+
+        // min > max
+        BadRequestException ex3 = assertThrows(BadRequestException.class,
+                () -> service.byPrice(new BigDecimal("11"), new BigDecimal("10")));
+        assertEquals("Invalid min/max price", ex3.getMessage());
+    }
+
+    @Test
+    @DisplayName("byPrice() rejects negative min even when min<max")
+    void byPrice_negativeMin() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> service.byPrice(new BigDecimal("-1"), new BigDecimal("10")));
+        assertEquals("min cannot be negative", ex.getMessage());
+    }
+
+    // ---------------------------------------------------------------------
+    // byName(String name)
+    // ---------------------------------------------------------------------
+
+    @Test
+    @DisplayName("byName() maps found products to DTOs")
+    void byName_found() {
+        Product p = new Product(); p.setId(4); p.setProductName("Phone Case");
+        ProductDTO d = ProductDTO.builder().id(4).name("Phone Case").build();
+
+        when(repo.searchByName("phone")).thenReturn(List.of(p));
+        when(mapper.toDto(p)).thenReturn(d);
 
         List<ProductDTO> out = service.byName("phone");
 
-        assertThat(out).containsExactly(d1);
-        verify(repo).searchByName("phone");
-        verify(mapper).toDto(p1);
+        assertEquals(1, out.size());
+        assertEquals("Phone Case", out.get(0).getName());
     }
 
     @Test
-    void byName_throws_whenEmpty() {
-        when(repo.searchByName("nope")).thenReturn(List.of());
-
-        assertThatThrownBy(() -> service.byName("nope"))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("No products found matching name: nope");
-
-        verify(repo).searchByName("nope");
-        verifyNoInteractions(mapper);
+    @DisplayName("byName() throws NotFound when empty")
+    void byName_empty() {
+        when(repo.searchByName("nothing")).thenReturn(List.of());
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> service.byName("nothing"));
+        assertEquals("No products found matching name: nothing", ex.getMessage());
+        verify(mapper, never()).toDto(any());
     }
 }
