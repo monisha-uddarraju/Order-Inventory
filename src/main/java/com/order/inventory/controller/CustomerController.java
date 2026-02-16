@@ -74,41 +74,6 @@ public class CustomerController {
 
     }
  
-//    // (Kept too for RESTful style) PUT /api/v1/customers/{id}
-
-//    @PutMapping("/{id}")
-
-//    public ResponseEntity<CustomerDTO> update(@PathVariable Integer id, @RequestBody CustomerDTO dto) {
-
-//        return ResponseEntity.ok(service.update(id, dto));
-
-//    }
- 
-//    // CSV shows a closing parenthesis typo; we implement the correct brace: {customerId}
-
-//    // DELETE /api/v1/customers/{customerId} – Delete
-
-//    @DeleteMapping("/{customerId}")
-
-//    public ResponseEntity<Void> delete(@PathVariable Integer customerId) {
-
-//        service.delete(customerId);
-
-//        return ResponseEntity.noContent().build();
-
-//    }
- 
-    // ---------------------------------------------------------
-
-    // Search (email / name)
-
-    // ---------------------------------------------------------
- 
-    // Safer/explicit routes first (good for Swagger clarity):
- 
-    // CSV single-segment ambiguous forms (kept with regex; email contains '@'):
-
-    // GET /api/v1/customers/{emailId}
 
     @GetMapping("/{emailId:.+@.+}")
 
