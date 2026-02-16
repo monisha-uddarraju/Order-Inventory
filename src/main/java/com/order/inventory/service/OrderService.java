@@ -44,14 +44,18 @@ public class OrderService {
         return orderRepo.findAll().stream().map(orderMapper::toDto).toList();
     }
 
+    /** Used by GET /api/v1/orders/{orderId} in controller */
     public OrderDTO get(Integer id) {
-        return orderRepo.findById(id).map(orderMapper::toDto)
-                .orElseThrow(() -> new NotFoundException("Order not found"));
+        return orderRepo.findById(id)
+                .map(orderMapper::toDto)
+                .orElseThrow(() -> new NotFoundException("Order with the specified order ID not found."));
     }
 
     public OrderDTO create(OrderDTO dto) {
-        if (dto.getCustomerId() == null || dto.getStoreId() == null || dto.getStatus() == null)
-            throw new BadRequestException("customerId, storeId and status are required");
+        // Excel: on any invalid creation input -> "Invalid request. Please provide valid order data for creation."
+        if (dto.getCustomerId() == null || dto.getStoreId() == null || dto.getStatus() == null) {
+            throw new BadRequestException("Invalid request. Please provide valid order data for creation.");
+        }
 
         Customer c = customerRepo.findById(dto.getCustomerId())
                 .orElseThrow(() -> new NotFoundException("Customer not found"));
@@ -64,25 +68,30 @@ public class OrderService {
         try {
             o.setOrderStatus(OrderStatus.valueOf(dto.getStatus().toUpperCase()));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid order status");
+            // IMPORTANT: for creation, Excel wants "creation" wording (not "updating")
+            throw new BadRequestException("Invalid request. Please provide valid order data for creation.");
         }
         o.setOrderTms(dto.getOrderTms() != null ? dto.getOrderTms() : Instant.now());
         return orderMapper.toDto(orderRepo.save(o));
     }
 
     public OrderDTO update(Integer id, OrderDTO dto) {
-        Order o = orderRepo.findById(id).orElseThrow(() -> new NotFoundException("Order not found"));
+        // 404 wording for update path
+        Order o = orderRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Order with the specified ID not found."));
+
         if (dto.getStatus() != null) {
             try {
                 o.setOrderStatus(OrderStatus.valueOf(dto.getStatus().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Invalid order status");
+                // Excel wants generic "updating" message, not "Invalid order status"
+                throw new BadRequestException("Invalid request. Please provide valid order data for updating.");
             }
         }
         if (dto.getOrderTms() != null) {
             o.setOrderTms(dto.getOrderTms());
         }
-        // (Optional) allow re-assignment of store/customer if provided
+        // Optional reassignment
         if (dto.getCustomerId() != null) {
             Customer c = customerRepo.findById(dto.getCustomerId())
                     .orElseThrow(() -> new NotFoundException("Customer not found"));
@@ -97,8 +106,15 @@ public class OrderService {
     }
 
     public void delete(Integer id) {
-        if (!orderRepo.existsById(id)) throw new NotFoundException("Order not found");
+        if (!orderRepo.existsById(id)) {
+            throw new NotFoundException("Order with the specified ID not found for deletion.");
+        }
         orderRepo.deleteById(id);
+    }
+
+    /** Helper for controller pre-checks on delete/cancel */
+    public boolean exists(Integer id) {
+        return orderRepo.existsById(id);
     }
 
     // ---------------------------------------------------------------------
@@ -115,6 +131,7 @@ public class OrderService {
         try {
             st = OrderStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
+            // Not in Excel, but it's reasonable to keep a 400 for invalid enum
             throw new BadRequestException("Invalid status");
         }
         return orderRepo.findByOrderStatus(st).stream().map(orderMapper::toDto).toList();
@@ -160,7 +177,8 @@ public class OrderService {
     // ---------------------------------------------------------------------
 
     public OrderDTO.Details details(Integer orderId) {
-        Order o = orderRepo.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
+        Order o = orderRepo.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order with the specified ID not found."));
         List<LineItem> items = itemRepo.findByOrderId(orderId).stream().map(itemMapper::toLineItem).toList();
         BigDecimal total = itemRepo.totalAmountByOrderId(orderId);
         return OrderDTO.Details.builder()
@@ -177,7 +195,8 @@ public class OrderService {
     }
 
     public OrderDTO cancel(Integer id) {
-        Order o = orderRepo.findById(id).orElseThrow(() -> new NotFoundException("Order not found"));
+        Order o = orderRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Order with the specified ID not found for cancellation."));
         o.setOrderStatus(OrderStatus.CANCELLED);
         return orderMapper.toDto(orderRepo.save(o));
     }

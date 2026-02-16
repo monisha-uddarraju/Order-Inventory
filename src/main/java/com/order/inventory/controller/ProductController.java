@@ -1,6 +1,7 @@
 package com.order.inventory.controller;
 
 import com.order.inventory.dto.ProductDTO;
+import com.order.inventory.exception.BadRequestException;
 import com.order.inventory.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -83,10 +84,16 @@ public class ProductController {
      * CSV (we keep RESTful path): PUT /api/v1/products/{id} – update by id
      * Throws 404 if product not found.
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductDTO> update(@PathVariable Integer id, @RequestBody ProductDTO dto) {
-        return ResponseEntity.ok(service.update(id, dto));
+    @PutMapping
+    public ResponseEntity<ProductDTO> updateByObject(@RequestBody ProductDTO dto) {
+     
+        if (dto.getId() == null) {
+            throw new BadRequestException("Product id is required for update");
+        }
+     
+        return ResponseEntity.ok(service.update(dto.getId(), dto));
     }
+     
 
 //    /**
 //     * CSV: DELETE /api/v1/products/{id} – delete by id

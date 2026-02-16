@@ -24,7 +24,7 @@ public class Order {
                 foreignKey = @ForeignKey(name = "orders_customer_id_fk"))
     private Customer customer;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) 
     @Column(name = "order_status", nullable = false, length = 10)
     private OrderStatus orderStatus;
 
