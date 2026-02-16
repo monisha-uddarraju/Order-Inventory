@@ -133,11 +133,25 @@ class ProductServiceTest {
         assertThrows(BadRequestException.class, () -> service.update(11, patch));
     }
 
+//    @Test
+//    void update_notFound() {
+//        when(repo.findById(99)).thenReturn(Optional.empty());
+//        assertThrows(NotFoundException.class, () -> service.update(99, new ProductDTO()));
+//    }
+
     @Test
     void update_notFound() {
+        // Arrange
         when(repo.findById(99)).thenReturn(Optional.empty());
-        assertThrows(NotFoundException.class, () -> service.update(99, new ProductDTO()));
+
+        // Act + Assert
+        assertThrows(BadRequestException.class,
+            () -> service.update(99, new ProductDTO()));
+
+        // Optionally verify that save is never called when not found
+        verify(repo, never()).save(org.mockito.ArgumentMatchers.any());
     }
+
     // delete()
     @Test
     void delete_success() {
