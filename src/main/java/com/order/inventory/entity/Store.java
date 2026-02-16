@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 public class Store {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "store_id")
     private Integer id;
 

@@ -60,6 +60,8 @@ public class OrderController {
             );
         }
     }
+    
+ 
 
     // ---------------------------------------------------------
     // 3) PUT /api/v1/orders – Update by object
@@ -198,18 +200,25 @@ public class OrderController {
     // 11) GET /api/v1/orders/date/{startDate}/{endDate}
     //     404 -> "Orders within the specified date range not found."
     // ---------------------------------------------------------
+//    @GetMapping("/date/{startDate}/{endDate}")
+//    public ResponseEntity<List<OrderDTO>> byDateRange(
+//            @PathVariable String startDate,
+//            @PathVariable String endDate) {
+//
+//        List<OrderDTO> list = service.byDateRange(startDate, endDate);
+//        if (list.isEmpty()) {
+//            throw new NotFoundException(
+//                "Orders within the specified date range not found."
+//            );
+//        }
+//        return ResponseEntity.ok(list);
+//    }
     @GetMapping("/date/{startDate}/{endDate}")
     public ResponseEntity<List<OrderDTO>> byDateRange(
             @PathVariable String startDate,
             @PathVariable String endDate) {
 
-        List<OrderDTO> list = service.byDateRange(startDate, endDate);
-        if (list.isEmpty()) {
-            throw new NotFoundException(
-                "Orders within the specified date range not found."
-            );
-        }
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(service.byDateRange(startDate, endDate));
     }
 
     // ---------------------------------------------------------

@@ -161,12 +161,46 @@ public class OrderService {
         return orderRepo.findByStoreName(storeName).stream().map(orderMapper::toDto).toList();
     }
 
+//    public List<OrderDTO> byDateRange(String startDate, String endDate) {
+//        try {
+//            Instant start = LocalDate.parse(startDate).atStartOfDay(ZoneOffset.UTC).toInstant();
+//            Instant end = LocalDate.parse(endDate).plusDays(1).atStartOfDay(ZoneOffset.UTC).minusSeconds(1).toInstant();
+//            if (start.isAfter(end)) throw new BadRequestException("startDate must be <= endDate");
+//            return orderRepo.findByDateRange(start, end).stream().map(orderMapper::toDto).toList();
+//        } catch (DateTimeParseException ex) {
+//            throw new BadRequestException("Dates must be yyyy-MM-dd");
+//        }
+//    }
+    
+
     public List<OrderDTO> byDateRange(String startDate, String endDate) {
         try {
-            Instant start = LocalDate.parse(startDate).atStartOfDay(ZoneOffset.UTC).toInstant();
-            Instant end = LocalDate.parse(endDate).plusDays(1).atStartOfDay(ZoneOffset.UTC).minusSeconds(1).toInstant();
-            if (start.isAfter(end)) throw new BadRequestException("startDate must be <= endDate");
-            return orderRepo.findByDateRange(start, end).stream().map(orderMapper::toDto).toList();
+            Instant start = LocalDate.parse(startDate)
+                                     .atStartOfDay(ZoneOffset.UTC)
+                                     .toInstant();
+
+            Instant end = LocalDate.parse(endDate)
+                                   .plusDays(1)
+                                   .atStartOfDay(ZoneOffset.UTC)
+                                   .minusSeconds(1)
+                                   .toInstant();
+
+            if (start.isAfter(end)) {
+                throw new BadRequestException("startDate must be <= endDate");
+            }
+
+            List<OrderDTO> out = orderRepo.findByDateRange(start, end)
+                                          .stream()
+                                          .map(orderMapper::toDto)
+                                          .toList();
+
+            // ✨ Add this block to satisfy the Excel requirement
+            if (out.isEmpty()) {
+                throw new NotFoundException("Orders within the specified date range not found.");
+            }
+
+            return out;
+
         } catch (DateTimeParseException ex) {
             throw new BadRequestException("Dates must be yyyy-MM-dd");
         }

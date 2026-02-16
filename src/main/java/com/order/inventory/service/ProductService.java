@@ -48,7 +48,8 @@ public class ProductService {
      */
     public List<ProductDTO> getAllStrict(String field) {
         if (field == null || field.isBlank() || !ALLOWED_SORT_FIELDS.contains(field)) {
-            throw new BadRequestException("Invalid sort field. Allowed: " + ALLOWED_SORT_FIELDS);
+//            throw new BadRequestException("Invalid sort field. Allowed: " + ALLOWED_SORT_FIELDS);
+        	throw new BadRequestException("Invalid request. Please provide a valid field for sorting.");
         }
         return repo.findAll(Sort.by(field).ascending()).stream().map(mapper::toDto).toList();
     }
@@ -71,7 +72,10 @@ public class ProductService {
      * PUT /products/{id} – update
      */
     public ProductDTO update(Integer id, ProductDTO dto) {
-        Product p = repo.findById(id).orElseThrow(() -> new NotFoundException("Product not found"));
+        //Product p = repo.findById(id).orElseThrow(() -> new NotFoundException("Product not found"));
+    	Product p = repo.findById(id).orElseThrow(() ->
+        new BadRequestException("Invalid request. Please provide valid product data for updating."));
+
         if (dto.getName() != null) p.setProductName(dto.getName());
         if (dto.getBrand() != null) p.setBrand(dto.getBrand());
         if (dto.getColour() != null) p.setColour(dto.getColour());
@@ -100,7 +104,7 @@ public class ProductService {
      */
     public List<ProductDTO> byBrand(String brand) {
         List<ProductDTO> out = repo.findByBrandIgnoreCase(brand).stream().map(mapper::toDto).toList();
-        if (out.isEmpty()) throw new NotFoundException("No products found for brand: " + brand);
+        if (out.isEmpty()) throw new NotFoundException("Products with the specified brand not found.");
         return out;
     }
 
@@ -110,7 +114,7 @@ public class ProductService {
      */
     public List<ProductDTO> byColour(String colour) {
         List<ProductDTO> out = repo.findByColourIgnoreCase(colour).stream().map(mapper::toDto).toList();
-        if (out.isEmpty()) throw new NotFoundException("No products found for colour: " + colour);
+        if (out.isEmpty()) throw new NotFoundException( "Products with the specified color not found.");
         return out;
     }
 
@@ -122,7 +126,7 @@ public class ProductService {
             throw new BadRequestException("Invalid min/max price");
         }
         if (min.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BadRequestException("min cannot be negative");
+            throw new BadRequestException("Invalid request. Please provide valid minimum and maximum unit prices.");
         }
         return repo.findByUnitPriceBetween(min, max).stream().map(mapper::toDto).toList();
     }
@@ -131,9 +135,22 @@ public class ProductService {
      * GET /products/{productname}
      * 404 if none
      */
+//    public List<ProductDTO> byName(String name) {
+//        List<ProductDTO> out = repo.searchByName(name).stream().map(mapper::toDto).toList();
+//        if (out.isEmpty()) throw new NotFoundException("No products found matching name: " + name);
+//        return out;
+//    }
     public List<ProductDTO> byName(String name) {
-        List<ProductDTO> out = repo.searchByName(name).stream().map(mapper::toDto).toList();
-        if (out.isEmpty()) throw new NotFoundException("No products found matching name: " + name);
+        List<ProductDTO> out = repo.searchByName(name)
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+
+        if (out.isEmpty()) {
+            // Excel-specified message
+            throw new NotFoundException("Product(s) with the specified name not found.");
+        }
+
         return out;
     }
 }

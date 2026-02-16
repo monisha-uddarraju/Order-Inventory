@@ -15,6 +15,7 @@ public interface OrderMapper {
         // NEW: map store fields
         @Mapping(source = "store.storeName", target = "storeName"),
         @Mapping(source = "store.webAddress", target = "webAddress")
+      
     })
     OrderDTO toDto(Order e);
 }
