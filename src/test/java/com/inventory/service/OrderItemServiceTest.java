@@ -1,130 +1,145 @@
 package com.inventory.service;
-
-import com.order.inventory.dto.OrderItemDTO;
-import com.order.inventory.entity.Order;
-import com.order.inventory.entity.OrderItem;
-import com.order.inventory.entity.Product;
-import com.order.inventory.entity.Shipment;
-import com.order.inventory.entity.ShipmentStatus;
-import com.order.inventory.mapper.OrderItemMapper;
-import com.order.inventory.repository.OrderItemRepository;
 import com.order.inventory.service.OrderItemService;
+import com.order.inventory.dto.OrderItemDTO;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.order.inventory.entity.OrderItem;
+
+import com.order.inventory.mapper.OrderItemMapper;
+
+import com.order.inventory.repository.OrderItemRepository;
+
+import org.junit.jupiter.api.DisplayName;
+
 import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.*;
+
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.math.BigDecimal;
+
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
+
 class OrderItemServiceTest {
+   @Mock
 
-    @Mock
-    private OrderItemRepository repo;
+   private OrderItemRepository repo;
+   @Mock
 
-    @Mock
-    private OrderItemMapper mapper;
+   private OrderItemMapper mapper;
+   @InjectMocks
 
-    @InjectMocks
-    private OrderItemService service;
+   private OrderItemService service;
+   @Test
 
-    private Order order;
-    private OrderItem i1;
-    private OrderItem i2;
-    private OrderItemDTO d1;
-    private OrderItemDTO d2;
+   @DisplayName("byOrder() maps repository items to DTOs when present")
 
-    @BeforeEach
-    void setUp() {
-        // --- Minimal domain setup (fields only needed if your mapper uses them;
-        // we mock the mapper below anyway)
-        order = new Order();
-        order.setId(1);
+   void byOrder_mapsItems() {
 
-        Product p1 = new Product();
-        p1.setId(100);
-        p1.setProductName("Phone X");
+       Integer orderId = 42;
+       // mock domain items
 
-        Product p2 = new Product();
-        p2.setId(200);
-        p2.setProductName("Laptop Z");
+       OrderItem i1 = mock(OrderItem.class);
 
-        Shipment shp = new Shipment();
-        shp.setShipmentStatus(ShipmentStatus.PENDING);
+       OrderItem i2 = mock(OrderItem.class);
+       // expected mapped DTOs
 
-        i1 = new OrderItem();
-        // NOTE: In your schema, order_id is the PK on order_items; lineItemId is a column
-        i1.setId(order.getId());          // order_id (PK)
-        i1.setOrder(order);
-        i1.setLineItemId(11);
-        i1.setProduct(p1);
-        i1.setUnitPrice(new BigDecimal("199.99"));
-        i1.setQuantity(2);
-        i1.setShipment(shp);
+       OrderItemDTO d1 = OrderItemDTO.builder()
 
-        i2 = new OrderItem();
-        i2.setId(order.getId());          // same order_id (PK)
-        i2.setOrder(order);
-        i2.setLineItemId(12);
-        i2.setProduct(p2);
-        i2.setUnitPrice(new BigDecimal("999.00"));
-        i2.setQuantity(1);
-        i2.setShipment(null);
+               .orderId(orderId)
 
-        d1 = OrderItemDTO.builder()
-                .orderId(order.getId())
-                .lineItemId(11)
-                .productId(100)
-                .productName("Phone X")
-                .unitPrice(new BigDecimal("199.99"))
-                .quantity(2)
-                .shipmentStatus("PENDING")
-                .build();
+               .lineItemId(1)
 
-        d2 = OrderItemDTO.builder()
-                .orderId(order.getId())
-                .lineItemId(12)
-                .productId(200)
-                .productName("Laptop Z")
-                .unitPrice(new BigDecimal("999.00"))
-                .quantity(1)
-                .shipmentStatus(null)
-                .build();
-    }
+               .productId(1001)
 
-    // ---------------------------------------------------------------------
-    // byOrder(orderId)
-    // ---------------------------------------------------------------------
+               .productName("Phone")
 
-    @Test
-    void byOrder_returnsMappedList_whenFound() {
-        when(repo.findByOrderId(1)).thenReturn(List.of(i1, i2));
-        when(mapper.toDto(i1)).thenReturn(d1);
-        when(mapper.toDto(i2)).thenReturn(d2);
+               .unitPrice(new BigDecimal("499.99"))
 
-        List<OrderItemDTO> out = service.byOrder(1);
+               .quantity(2)
 
-        assertThat(out).containsExactly(d1, d2);
-        verify(repo).findByOrderId(1);
-        verify(mapper).toDto(i1);
-        verify(mapper).toDto(i2);
-        verifyNoMoreInteractions(repo, mapper);
-    }
+               .shipmentStatus("PENDING")
 
-    @Test
-    void byOrder_returnsEmpty_whenNoItems() {
-        when(repo.findByOrderId(999)).thenReturn(List.of());
+               .build();
+       OrderItemDTO d2 = OrderItemDTO.builder()
 
-        List<OrderItemDTO> out = service.byOrder(999);
+               .orderId(orderId)
 
-        assertThat(out).isEmpty();
-        verify(repo).findByOrderId(999);
-        verifyNoInteractions(mapper);
-    }
+               .lineItemId(2)
+
+               .productId(1002)
+
+               .productName("Case")
+
+               .unitPrice(new BigDecimal("19.99"))
+
+               .quantity(1)
+
+               .shipmentStatus(null)
+
+               .build();
+       when(repo.findByOrderId(orderId)).thenReturn(List.of(i1, i2));
+
+       when(mapper.toDto(i1)).thenReturn(d1);
+
+       when(mapper.toDto(i2)).thenReturn(d2);
+       List<OrderItemDTO> out = service.byOrder(orderId);
+       assertEquals(2, out.size());
+
+       assertEquals(42, out.get(0).getOrderId());
+
+       assertEquals(1, out.get(0).getLineItemId());
+
+       assertEquals(1001, out.get(0).getProductId());
+
+       assertEquals("Phone", out.get(0).getProductName());
+
+       assertEquals(new BigDecimal("499.99"), out.get(0).getUnitPrice());
+
+       assertEquals(2, out.get(0).getQuantity());
+
+       assertEquals("PENDING", out.get(0).getShipmentStatus());
+       assertEquals(42, out.get(1).getOrderId());
+
+       assertEquals(2, out.get(1).getLineItemId());
+
+       assertEquals(1002, out.get(1).getProductId());
+
+       assertEquals("Case", out.get(1).getProductName());
+
+       assertEquals(new BigDecimal("19.99"), out.get(1).getUnitPrice());
+
+       assertEquals(1, out.get(1).getQuantity());
+
+       assertNull(out.get(1).getShipmentStatus());
+       verify(repo, times(1)).findByOrderId(orderId);
+
+       verify(mapper, times(1)).toDto(i1);
+
+       verify(mapper, times(1)).toDto(i2);
+
+   }
+   @Test
+
+   @DisplayName("byOrder() returns empty list when repository returns no items")
+
+   void byOrder_emptyList() {
+
+       Integer orderId = 999;
+       when(repo.findByOrderId(orderId)).thenReturn(List.of());
+       List<OrderItemDTO> out = service.byOrder(orderId);
+       assertTrue(out.isEmpty());
+
+       verify(repo, times(1)).findByOrderId(orderId);
+
+       verify(mapper, never()).toDto(any());
+
+   }
+
 }
+ 
