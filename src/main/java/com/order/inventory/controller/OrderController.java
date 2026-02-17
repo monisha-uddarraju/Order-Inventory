@@ -25,8 +25,6 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<?> all() {
         try {
-            // Option A: we do NOT include items; OrderDTO has no root-level items,
-            // so we simply return the list as-is.
             List<OrderDTO> list = service.all();
             return ResponseEntity.ok(list);
         } catch (Exception ex) {
@@ -40,27 +38,13 @@ public class OrderController {
     //    400 -> "Invalid request. Please provide valid order data for creation."
     //    Success body -> "Record Created Successfully"
     // ---------------------------------------------------------
+ 
     @PostMapping
     public ResponseEntity<String> create(@RequestBody OrderDTO dto) {
-        try {
-            if (dto.getCustomerId() == null ||
-                dto.getStoreId() == null ||
-                dto.getStatus() == null) {
-                throw new BadRequestException(
-                    "Invalid request. Please provide valid order data for creation."
-                );
-            }
-            service.create(dto);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body("Record Created Successfully");
-        } catch (BadRequestException e) {
-            // Force the exact Excel wording for any validation failure
-            throw new BadRequestException(
-                "Invalid request. Please provide valid order data for creation."
-            );
-        }
+        service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("Record Created Successfully");
     }
-    
  
 
     // ---------------------------------------------------------
@@ -100,11 +84,8 @@ public class OrderController {
 //        service.delete(id);
 //        return ResponseEntity.ok("Record deleted Successfully");
 //    }
-
-    // ---------------------------------------------------------
     // 5) GET /api/v1/orders/status – Count of orders by status
     //    500 -> "An internal server error occurred while fetching the count of orders by status."
-    // ---------------------------------------------------------
     @GetMapping("/status")
     public ResponseEntity<?> countByStatus() {
         try {
@@ -114,8 +95,6 @@ public class OrderController {
                 .body("An internal server error occurred while fetching the count of orders by status.");
         }
     }
-
-    // ---------------------------------------------------------
     // 6) GET /api/v1/orders/{store} – Non-numeric store name
     //    404 -> "Orders with the specified store name not found."
     //    Response shape: orderid, orderstatus, storename, webaddress

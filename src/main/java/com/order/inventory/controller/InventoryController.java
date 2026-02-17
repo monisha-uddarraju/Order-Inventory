@@ -1,16 +1,10 @@
 package com.order.inventory.controller;
- 
+
 import com.order.inventory.dto.InventoryDTO;
- 
+
 import com.order.inventory.dto.OrderDTO;
 
 import com.order.inventory.dto.ShipmentDTO;
-
-import com.order.inventory.entity.Inventory;
-
-import com.order.inventory.entity.OrderItem;
-
-import com.order.inventory.dto.OrderItemDTO;
 
 import com.order.inventory.exception.NotFoundException;
 
@@ -25,11 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
- 
-import java.util.List;
 
-import java.util.Map;
- 
+import java.util.*;
+
 @RestController
 
 @RequestMapping("/api/v1/inventory")
@@ -37,164 +29,171 @@ import java.util.Map;
 @RequiredArgsConstructor
 
 public class InventoryController {
- 
-	private final InventoryService invService;
 
-	private final ShipmentService shipService;
+    private final InventoryService invService;
 
-	private final OrderService orderService;
- 
-	/**
+    private final ShipmentService shipService;
 
-	 * CSV: 1) GET /api/v1/inventory – all inventory 2) GET
+    private final OrderService orderService;
 
-	 * /api/v1/inventory?storeid=value – filter by store (404 when none)
+    // 1) GET /api/v1/inventory
 
-	 */
+    // 2) GET /api/v1/inventory?storeid=value
 
-	@GetMapping
+    @GetMapping
 
-	public ResponseEntity<List<InventoryDTO>> all(@RequestParam(required = false, name = "storeid") Integer storeId) {
+    public ResponseEntity<?> all(@RequestParam(required = false, name = "storeid") Integer storeId) {
 
-		if (storeId != null)
+        if (storeId != null) {
 
-			return ResponseEntity.ok(invService.byStoreRequired(storeId));
+            // CSV: Custom object of product, store, order details
 
-		return ResponseEntity.ok(invService.all());
+            List<InventoryDTO> list = invService.byStoreRequired(storeId);
 
-	}
- 
-	/**
+            Map<String, Object> payload = new LinkedHashMap<>();
 
-	 * CSV: GET /api/v1/inventory/shipment - "Fetch inventories and matching
+            payload.put("storeId", storeId);
 
-	 * shipments" (default) - "Count shipment status wise count of total products
+            // Build store block (using first record)
 
-	 * sold" (when aggregate=true)
+            if (!list.isEmpty()) {
 
-	 */
+                InventoryDTO first = list.get(0);
 
-	@GetMapping("/shipment/count-by-status")
+                Map<String, Object> store = Map.of(
 
-	public ResponseEntity<?> shipmentEither(
+                        "storeId", first.getStoreId(),
 
-			@RequestParam(name = "aggregate", required = false, defaultValue = "false") boolean aggregate) {
+                        "storeName", first.getStoreName()
 
-		if (aggregate) {
+                );
 
-			// status -> totalSold
+                payload.put("store", store);
 
-			List<ShipmentDTO.SoldCount> payload = shipService.totalSoldGroupedByShipmentStatus();
+            }
 
-			return ResponseEntity.ok(payload);
+            // Product list
 
-		}
+            List<Map<String, Object>> products = new ArrayList<>();
 
-		// list of inventories that have shipments
+            for (InventoryDTO dto : list) {
 
-		return ResponseEntity.ok(invService.inventoriesWithShipments());
+                products.add(Map.of(
 
-	}
- 
-	/**
+                        "productId", dto.getProductId(),
 
-	 * CSV: GET /api/v1/inventory/{orderid} Return a custom object with customer,
+                        "productName", dto.getProductName(),
 
-	 * store, and product data for the order (404 if none).
+                        "quantity", dto.getQuantity()
 
-	 */
+                ));
 
-	@GetMapping("/{orderid}")
+            }
 
-	public ResponseEntity<Map<String, Object>> snapshotByOrder(@PathVariable("orderid") Integer orderId) {
+            payload.put("products", products);
 
-		return ResponseEntity.ok(invService.orderSnapshot(orderId));
+            return ResponseEntity.ok(payload);
 
-	}
- 
-	/**
+        }
 
-	 * CSV: GET /api/v1/inventory/{orderid}/details Products in order + storeName +
+        // CSV: Must return a custom object (NOT bare list)
 
-	 * shipmentStatus + total amount (uses existing OrderService).
+        List<InventoryDTO> all = invService.all();
 
-	 */
+        Map<String, Object> payload = Map.of("inventories", all);
 
-	@GetMapping("/{orderid}/details")
+        return ResponseEntity.ok(payload);
 
-	public ResponseEntity<OrderDTO.Details> orderDetails(@PathVariable("orderid") Integer orderId) {
+    }
 
-		OrderDTO.Details details = orderService.details(orderId);
+    // 3) GET /api/v1/inventory/shipment  (fetch inventories + shipments)
 
-		// If you want to enforce 404 when no items present, uncomment:
+    @GetMapping(value = "/shipment", params = "!aggregate")
 
-		// if (details.getItems() == null || details.getItems().isEmpty())
+    public ResponseEntity<?> inventoriesWithShipments_list() {
 
-		// throw new NotFoundException("List of products in the specified order ID not
+        return ResponseEntity.ok(invService.inventoriesWithShipments());
 
-		// found with store details, shipment status, and total amount.");
+    }
 
-		return ResponseEntity.ok(details);
+    // 5) GET /api/v1/inventory/shipment?aggregate=true (count shipment status wise)
 
-	}
- 
-	/**
+    @GetMapping(value = "/shipment", params = "aggregate=true")
 
-	 * CSV: GET /api/v1/inventory/product/{productId}/store/{storeId} 404 when none.
+    public ResponseEntity<?> inventoriesWithShipments_count() {
 
-	 */
+        List<ShipmentDTO.SoldCount> rows = shipService.totalSoldGroupedByShipmentStatus();
 
-	@GetMapping("/product/{productId}/store/{storeId}")
+        Map<String, Object> payload = Map.of("shipmentSoldCount", rows);
 
-	public ResponseEntity<List<InventoryDTO>> byProductAndStore(@PathVariable Integer productId,
+        return ResponseEntity.ok(payload);
 
-			@PathVariable Integer storeId) {
+    }
 
-		return ResponseEntity.ok(invService.byProductAndStoreRequired(productId, storeId));
+    // 4) GET /api/v1/inventory/{orderid}
 
-	}
- 
-	/**
+    @GetMapping("/{orderid}")
 
-	 * CSV: GET /api/v1/inventory/category/{category} Since there's no "category"
+    public ResponseEntity<Map<String, Object>> snapshotByOrder(@PathVariable("orderid") Integer orderId) {
 
-	 * column, we treat category as brand or colour. 404 when none.
+        return ResponseEntity.ok(invService.orderSnapshot(orderId));
 
-	 */
+    }
 
-	@GetMapping("/category/{category}")
+    // 6) GET /api/v1/inventory/{orderid}/details
+
+    @GetMapping("/{orderid}/details")
+
+    public ResponseEntity<OrderDTO.Details> orderDetails(@PathVariable("orderid") Integer orderId) {
+
+        OrderDTO.Details details = orderService.details(orderId);
+
+        // CSV requires 404 when list empty
+
+        if (details.getItems() == null || details.getItems().isEmpty()) {
+
+            throw new NotFoundException(
+
+                    "List of products in the specified order ID not found with store details, shipment status, and total amount."
+
+            );
+
+        }
+
+        return ResponseEntity.ok(details);
+
+    }
+
+    // 7) GET /api/v1/inventory/product/{productId}/store/{storeId}
+
+    @GetMapping("/product/{productId}/store/{storeId}")
+
+    public ResponseEntity<List<InventoryDTO>> byProductAndStore(@PathVariable Integer productId,
+
+                                                                @PathVariable Integer storeId) {
+
+        return ResponseEntity.ok(invService.byProductAndStoreRequired(productId, storeId));
+
+    }
+
+    // 8) GET /api/v1/inventory/category/{category}
+
+//    @GetMapping("/category/{category}")
+
+//    public ResponseEntity<List<InventoryDTO>> byCategory(@PathVariable String category) {
+
+//        return ResponseEntity.ok(invService.byCategoryRequired(category));
+
+//    }
+
+    @GetMapping("/category/{category}")
 
 	public ResponseEntity<List<InventoryDTO>> byCategory(@PathVariable String category) {
 
 		return ResponseEntity.ok(invService.byCategoryRequired(category));
 
 	}
- 
-	// GET /api/v1/inventory or /api/v1/inventory?storeid=value
 
-	@GetMapping("/storeId/{storeId}")
-
-	public ResponseEntity<List<InventoryDTO>> get(@RequestParam(value = "storeid", required = false) Integer storeId) {
-
-		if (storeId == null)
-
-			return ResponseEntity.ok(invService.all());
-
-		return ResponseEntity.ok(invService.byStoreRequired(storeId));
-
-	}
-
- 
-	 @GetMapping("/shipments")
-
-	    public ResponseEntity<List<InventoryDTO>> inventoriesWithShipments() {
-
-	        return ResponseEntity.ok(invService.inventoriesWithShipments());
-
-	    }
- 
- 
-	
- 
 }
+
  

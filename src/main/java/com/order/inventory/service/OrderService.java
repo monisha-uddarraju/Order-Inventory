@@ -194,7 +194,6 @@ public class OrderService {
                                           .map(orderMapper::toDto)
                                           .toList();
 
-            // ✨ Add this block to satisfy the Excel requirement
             if (out.isEmpty()) {
                 throw new NotFoundException("Orders within the specified date range not found.");
             }
